@@ -28,6 +28,7 @@ sig Carro{
 	regiao: one Regiao,
 	disponibilidade: set Disponibilidade -> Time 
 
+
 }
 
 sig Corrida{
@@ -42,23 +43,40 @@ fact disponibilidade{
 	#Disponivel = 1
 	#NaoDisponivel = 1
 	all disponibilidade:Disponibilidade | (disponibilidade in Disponivel) || (disponibilidade in NaoDisponivel)
+	all c:Carro | all t:Time | one c.disponibilidade.t
 }
 
 fact placas{
 	#Placa = #Carro
-	 all p:Placa | one p.~placa
+	all p:Placa | one p.~placa
+}
+
+fact carro{
+	all c:Carro | all t:Time | all corrida:Corrida | c in corrida.carro.t => c.disponibilidade.t = NaoDisponivel	
+	all c:Carro | all t:Time | all corrida:Corrida | c !in corrida.carro.t => c.disponibilidade.t = Disponivel
+	some c:Carro | some corrida:Corrida | some t: Time | c in corrida.carro.t
+	all c:Corrida | all t:Time | lone c.carro.t
 }
 
 fact central{
 	#Central = 1
-	 all c:Carro| c in Central.carros
+	all c:Carro| c in Central.carros
 }
+
+fact passageiro{
+	all p:Passageiro | all c1, c2:Corrida | all t:Time | (c1 != c2 && p in c1.passageiro.t) => p !in c2.passageiro.t	
+	some p:Passageiro | all c:Corrida | some t: Time | p in c.passageiro.t
+	some c:Corrida | some t:Time | one c.carro.t
+}
+
 
 fact traces{
 	init[first]
 }
 
 pred init[t:Time]{
+	no Corrida.passageiro.t
+	no Corrida.carro.t
 	all carro:Carro | carro.(disponibilidade.t) in Disponivel
 }
 
@@ -67,8 +85,8 @@ pred temCarroDisponivelNaRegiao[r:Regiao, t:Time]{
 }
 
 pred alocarCarro [present, future:Time, p:Passageiro, r:Regiao, corrida:Corrida]{
-	(some c:Carro | (c  in Central.carros) and (c.disponibilidade.present) = Disponivel and (c.regiao = r) => 
-				(c in corrida.carro.future and c.disponibilidade.future = NaoDisponivel and corrida.passageiro.future = p))
+	(some c:Carro | (c  in Central.carros) and (c.disponibilidade.present) = Disponivel and (c.regiao = r) and p !in (corrida.passageiro.present)=> 
+				(c in corrida.carro.future and c.disponibilidade.future in NaoDisponivel and p in corrida.passageiro.future))
 
 //FAZER TODA A PARTE PARA 'SE NÃO TIVER CARRO DISPONIVEL NA REGIÃO' "acho que vai ser mais fácil"(DRIZIA, HA) 2017
 
