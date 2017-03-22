@@ -48,7 +48,7 @@ fact disponibilidade{
 
 fact placas{
 	#Placa = #Carro
-	all p:Placa | one p.~placa
+	 all p:Placa | one p.~placa
 }
 
 fact carro{
@@ -60,7 +60,7 @@ fact carro{
 
 fact central{
 	#Central = 1
-	all c:Carro| c in Central.carros
+	 all c:Carro| c in Central.carros
 }
 
 fact passageiro{
@@ -69,6 +69,10 @@ fact passageiro{
 	some c:Corrida | some t:Time | one c.carro.t
 }
 
+
+fact corrida{
+	
+}
 
 fact traces{
 	init[first]
@@ -92,20 +96,19 @@ pred alocarCarro [present, future:Time, p:Passageiro, r:Regiao, corrida:Corrida]
 
 
 //checar se o carro não está na corrida no tempo anterior
-//checar s eo passageiro naõ está na corrida no tempo anterior
-//criar um fato para dizer que não existe corrida sem carro e sem passageiro
 //REFATORAAAAAAAAR
 //FAZER TIPOS DE CARRO
 //FAZER O MESMO PRA DESALOCAR
 
+//um carro está ligado apenas a uma corrida
+// uma corrida possui um passageiro
+
 	
 }
 
+pred desalocarCarro [present, future:Time, p:Passageiro, r:Regiao, corrida:Corrida]{
+	(some c:Carro | (c  in Central.carros) and (c.disponibilidade.present) = NaoDisponivel and p in (corrida.passageiro.present)=> 
+				(c !in corrida.carro.future and c.disponibilidade.future in Disponivel and p in corrida.passageiro.future))
+}
+
 run show for 9
-
-
--- TESTAR
-
--- Criar uma nova assinatura chamada validaDisponibilidade para verificar se o carro estah disponivel ou nao.
--- tal assinatura serah abstrata. Duas assinaturas irao extender esta, uma serah carroDisponivel e a outra serah carroNaoDisponivel.
--- Criar uma regra para ao inicializar o sistema, a central disponibilizar todos os carros como disponiveis
