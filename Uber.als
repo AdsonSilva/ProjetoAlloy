@@ -1,114 +1,106 @@
 module uber 
 
-open util/ordering[Time]
+	open util/ordering[Time]
 
-sig Time {}
+	sig Time {}
 	
-abstract sig Regiao{}
+	one sig Central {
+		carros: set Carro
+	}
 
-one sig RegiaoLeste, RegiaoOeste, RegiaoNorte, RegiaoSul, RegiaoCentro extends Regiao{}
+	sig Carro{
+		placa: one Placa,
+		regiao: one Regiao,
+		disponibilidade: set Disponibilidade -> Time 
+	}
 
-abstract sig Disponibilidade{}
+	sig Passageiro {}
 
-sig Disponivel extends Disponibilidade{}
+	sig Placa{}
 
-sig NaoDisponivel extends Disponibilidade{}
+	abstract sig Regiao{}
 
-one sig Central {
-	carros: set Carro
-}
+	one sig RegiaoLeste, RegiaoOeste, RegiaoNorte, RegiaoSul, RegiaoCentro extends Regiao{}
 
-sig Passageiro {
-}
+	abstract sig Disponibilidade{}
 
-sig Placa{}
+	sig Disponivel extends Disponibilidade{}
 
-sig Carro{
-	placa: one Placa,
-	regiao: one Regiao,
-	disponibilidade: set Disponibilidade -> Time 
-
-
-}
-
-sig Corrida{
-	passageiro: set Passageiro -> Time ,
-	regiao: set Regiao  -> Time ,
-	carro: set Carro -> Time 
-}
-
-pred show[]{}
-
-fact disponibilidade{
-	#Disponivel = 1
-	#NaoDisponivel = 1
-	all disponibilidade:Disponibilidade | (disponibilidade in Disponivel) || (disponibilidade in NaoDisponivel)
-	all c:Carro | all t:Time | one c.disponibilidade.t
-}
-
-fact placas{
-	#Placa = #Carro
-	 all p:Placa | one p.~placa
-}
-
-fact carro{
-	all c:Carro | all t:Time | all corrida:Corrida | c in corrida.carro.t => c.disponibilidade.t = NaoDisponivel	
-	all c:Carro | all t:Time | all corrida:Corrida | c !in corrida.carro.t => c.disponibilidade.t = Disponivel
-	some c:Carro | some corrida:Corrida | some t: Time | c in corrida.carro.t
-	all c:Corrida | all t:Time | lone c.carro.t
-}
-
-fact central{
-	#Central = 1
-	 all c:Carro| c in Central.carros
-}
-
-fact passageiro{
-	all p:Passageiro | all c1, c2:Corrida | all t:Time | (c1 != c2 && p in c1.passageiro.t) => p !in c2.passageiro.t	
-	some p:Passageiro | all c:Corrida | some t: Time | p in c.passageiro.t
-	some c:Corrida | some t:Time | one c.carro.t
-}
-
-
-fact corrida{
+	sig NaoDisponivel extends Disponibilidade{}
 	
-}
+	sig Corrida{
+		passageiro: set Passageiro -> Time ,
+		regiao: set Regiao  -> Time ,
+		carro: set Carro -> Time 
+	}
 
-fact traces{
-	init[first]
-}
+	fact disponibilidade{
+		#Disponivel = 1
+		#NaoDisponivel = 1
+		all disponibilidade:Disponibilidade | (disponibilidade in Disponivel) || (disponibilidade in NaoDisponivel)
+		all c:Carro | all t:Time | one c.disponibilidade.t
+	}
 
-pred init[t:Time]{
-	no Corrida.passageiro.t
-	no Corrida.carro.t
-	all carro:Carro | carro.(disponibilidade.t) in Disponivel
-}
+	fact placas{
+		#Placa = #Carro
+	 	all p:Placa | one p.~placa
+	}
 
-pred temCarroDisponivelNaRegiao[r:Regiao, t:Time]{
-	some c:Carro | (c  in Central.carros) and (c.disponibilidade.t) = Disponivel and (c.regiao = r)
-}
+	fact carro{
+		all c:Carro | all t:Time | all corrida:Corrida | c in corrida.carro.t => c.disponibilidade.t = NaoDisponivel	
+		all c:Carro | all t:Time | all corrida:Corrida | c !in corrida.carro.t => c.disponibilidade.t = Disponivel
+		some c:Carro | some corrida:Corrida | some t: Time | c in corrida.carro.t
+		all c:Corrida | all t:Time | lone c.carro.t
+	}
 
-pred alocarCarro [present, future:Time, p:Passageiro, r:Regiao, corrida:Corrida]{
-	(some c:Carro | (c  in Central.carros) and (c.disponibilidade.present) = Disponivel and (c.regiao = r) and p !in (corrida.passageiro.present)=> 
+	fact central{
+		#Central = 1
+		all c:Carro| c in Central.carros
+	}
+
+	fact passageiro{
+		all p:Passageiro | all c1, c2:Corrida | all t:Time | (c1 != c2 && p in c1.passageiro.t) => p !in c2.passageiro.t	
+		some p:Passageiro | all c:Corrida | some t: Time | p in c.passageiro.t
+		some c:Corrida | some t:Time | one c.carro.t
+	}
+
+
+	fact corrida{
+		all corrida:Corrida | some t:Time | #corrida.passageiro.t = 1
+	}
+
+	/* Execucao Principal.  */
+	fact traces{
+		init[first]
+	}
+
+	/* inicializacao do sistema	*/
+	pred init[t:Time]{
+		no Corrida.passageiro.t
+		no Corrida.carro.t
+		all carro:Carro | carro.(disponibilidade.t) in Disponivel
+	}
+
+	pred temCarroDisponivelNaRegiao[r:Regiao, t:Time]{
+		some c:Carro | (c  in Central.carros) and (c.disponibilidade.t) = Disponivel and (c.regiao = r)
+	}
+
+	/*Eh possivel um passagueiro solocitar uma corrida para uma determinada regiao - alocando um carro disponivel na centreal daquela regiao  */
+	pred alocarCarro [present, future:Time, p:Passageiro, r:Regiao, corrida:Corrida]{
+		(some c:Carro | (c  in Central.carros) and (c.disponibilidade.present) = Disponivel and (c.regiao = r) and p !in (corrida.passageiro.present)=> 
 				(c in corrida.carro.future and c.disponibilidade.future in NaoDisponivel and p in corrida.passageiro.future))
 
-//FAZER TODA A PARTE PARA 'SE NÃO TIVER CARRO DISPONIVEL NA REGIÃO' "acho que vai ser mais fácil"(DRIZIA, HA) 2017
+	//FAZER TODA A PARTE PARA 'SE NÃO TIVER CARRO DISPONIVEL NA REGIÃO' "acho que vai ser mais fácil"(DRIZIA, HA) 2017
 
 
-//checar se o carro não está na corrida no tempo anterior
-//REFATORAAAAAAAAR
-//FAZER TIPOS DE CARRO
-//FAZER O MESMO PRA DESALOCAR
+	//um carro está ligado apenas a uma corrida
+	}
 
-//um carro está ligado apenas a uma corrida
-// uma corrida possui um passageiro
-
-	
-}
-
-pred desalocarCarro [present, future:Time, p:Passageiro, r:Regiao, corrida:Corrida]{
-	(some c:Carro | (c  in Central.carros) and (c.disponibilidade.present) = NaoDisponivel and p in (corrida.passageiro.present)=> 
+	/*Eh possivel desalocar um carro que nao esta mais sendo usado em uma corrida, ficando assim disponivel na central para uma futura corrida  */
+	pred desalocarCarro [present, future:Time, p:Passageiro, r:Regiao, corrida:Corrida]{
+		(some c:Carro | (c  in Central.carros) and (c.disponibilidade.present) = NaoDisponivel and p in (corrida.passageiro.present)=> 
 				(c !in corrida.carro.future and c.disponibilidade.future in Disponivel and p in corrida.passageiro.future))
-}
+	}
 
-run show for 9
+	pred show[]{}
+	run show for 9
