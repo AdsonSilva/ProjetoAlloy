@@ -85,15 +85,14 @@ module uber
 		some c:Carro | (c  in Central.carros) and (c.disponibilidade.t) = Disponivel and (c.regiao = r)
 	}
 
-	/*Eh possivel um passagueiro solocitar uma corrida para uma determinada regiao - alocando um carro disponivel na centreal daquela regiao  */
+	/*Eh possivel um passageiro solocitar uma corrida para uma determinada regiao - alocando um carro disponivel na central daquela regiao  */
 	pred alocarCarro [present, future:Time, p:Passageiro, r:Regiao, corrida:Corrida]{
 		(some c:Carro | (c  in Central.carros) and (c.disponibilidade.present) = Disponivel and (c.regiao = r) and p !in (corrida.passageiro.present)=> 
 				(c in corrida.carro.future and c.disponibilidade.future in NaoDisponivel and p in corrida.passageiro.future))
+		
+	 	(some c:Carro | (c  in Central.carros) and (c.disponibilidade.present) = Disponivel and p !in (corrida.passageiro.present)=> 
+			(c in corrida.carro.future and c.disponibilidade.future in NaoDisponivel and p in corrida.passageiro.future))
 
-	//FAZER TODA A PARTE PARA 'SE NÃO TIVER CARRO DISPONIVEL NA REGIÃO' "acho que vai ser mais fácil"(DRIZIA, HA) 2017
-
-
-	//um carro está ligado apenas a uma corrida
 	}
 
 	/*Eh possivel desalocar um carro que nao esta mais sendo usado em uma corrida, ficando assim disponivel na central para uma futura corrida  */
@@ -103,4 +102,5 @@ module uber
 	}
 
 	pred show[]{}
+
 	run show for 9
