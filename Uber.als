@@ -100,7 +100,28 @@ module uber
 		(some c:Carro | (c  in Central.carros) and (c.disponibilidade.present) = NaoDisponivel and p in (corrida.passageiro.present)=> 
 				(c !in corrida.carro.future and c.disponibilidade.future in Disponivel and p in corrida.passageiro.future))
 	}
-
+    -- Verifica se em toda corrida o carro esta indisponivel
+	assert carro_indisponivel_corrida {
+		all c:Carro | all t:Time | all corrida:Corrida | c in corrida.carro.t => c.disponibilidade.t = NaoDisponivel	
+    }
+	-- Verifica se o carro nao está em corrida e ele esta disponivel
+	assert carro_disponivel_corrida {
+		all c:Carro | all t:Time | all corrida:Corrida | c !in corrida.carro.t => c.disponibilidade.t = Disponivel
+    }
+	-- Verifica se toda corrida tem pelo um passageiro
+	assert toda_corrida_tem_passageiro {
+		all corrida:Corrida | some t:Time | #corrida.passageiro.t = 1
+	}
+    -- Verifica se todas as corridas estão em uma região
+	assert toda_corrida_em_regiao {
+    	all corrida:Corrida | all t:Time | corrida.regiao.t in Regiao 
+   }
+	
 	pred show[]{}
+
+	check carro_indisponivel_corrida for 	9	
+	check carro_disponivel_corrida for 	9	
+	check toda_corrida_tem_passageiro for 9
+	check toda_corrida_em_regiao for 9
 
 	run show for 9
