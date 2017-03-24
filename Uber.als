@@ -64,7 +64,6 @@ module uber
 		some c:Corrida | some t:Time | one c.carro.t
 	}
 
-
 	fact corrida{
 		all corrida:Corrida | some t:Time | #corrida.passageiro.t = 1
 	}
@@ -81,45 +80,51 @@ module uber
 		all carro:Carro | carro.(disponibilidade.t) in Disponivel
 	}
 
-	pred temCarroDisponivelNaRegiao[r:Regiao, t:Time]{
-		some c:Carro | (c  in todosCarros) and (c.disponibilidade.t) = Disponivel and (c.regiao = r)
-	}
-
-	/*Eh possivel um passageiro solocitar uma corrida para uma determinada regiao - alocando um carro disponivel na central daquela regiao  */
+	-- Eh possivel um passageiro solocitar uma corrida para uma determinada regiao - alocando um carro disponivel na central daquela regiao 
 	pred alocarCarro [present, future:Time, p:Passageiro, r:Regiao, corrida:Corrida]{
-		(some c:Carro | (c  in todosCarros) and disponibilidadeCarroEmTempo[c, present] = Disponivel and (c.regiao = r) and p !in (corrida.passageiro.present)=> 
-				(c in corrida.carro.future and disponibilidadeCarroEmTempo[c, future] in NaoDisponivel and p in corrida.passageiro.future))
+		(some c:Carro | (c  in todosCarros) and disponibilidadeCarroEmTempo[c, present] = Disponivel and (c.regiao = r) and p !in (passageiroCorrida[corrida, present])=> 
+				(c in corrida.carro.future and disponibilidadeCarroEmTempo[c, future] in NaoDisponivel and p in passageiroCorrida[corrida, future]))
 		
 	 	(some c:Carro | (c  in todosCarros) and disponibilidadeCarroEmTempo[c, present]  = Disponivel and p !in (corrida.passageiro.present)=> 
 			(c in corrida.carro.future and disponibilidadeCarroEmTempo[c, future] in NaoDisponivel and p in corrida.passageiro.future))
-
 	}
 
-	/*Eh possivel desalocar um carro que nao esta mais sendo usado em uma corrida, ficando assim disponivel na central para uma futura corrida  */
+	-- Eh possivel desalocar um carro que nao esta mais sendo usado em uma corrida, ficando assim disponivel na central para uma futura corrida  
 	pred desalocarCarro [present, future:Time, p:Passageiro, r:Regiao, corrida:Corrida]{
-		(some c:Carro | (c  in todosCarros) and (c.disponibilidade.present) = NaoDisponivel and p in (corrida.passageiro.present)=> 
-				(c !in corrida.carro.future and c.disponibilidade.future in Disponivel and p in corrida.passageiro.future))
+		(some c:Carro | (c  in todosCarros) and (c.disponibilidade.present) = NaoDisponivel and p in (passageiroCorrida[corrida, present])=> 
+				(c !in corrida.carro.future and c.disponibilidade.future in Disponivel and p in passageiroCorrida[corrida, future]))
 	}
 
+	-- Função que retorna todos os carros da central 
 	fun todosCarros: set Carro {
-	 Central.carros
+		Central.carros
     }	
+
+	-- Função que retorna a disponibilidade em função do tempo
 	fun disponibilidadeCarroEmTempo[c:Carro, t:Time]:  Disponibilidade{
-	c.disponibilidade.t
-}										
+		c.disponibilidade.t
+    }					
+
+	-- Função para retornar um passageiro na corrida atual
+	fun passageiroCorrida[corrida:Corrida, time:Time]: Passageiro {
+		corrida.passageiro.time
+	}					
 
     -- Verifica se em toda corrida o carro esta indisponivel
 	assert carro_indisponivel_corrida {
 		all c:Carro | all t:Time | all corrida:Corrida | c in corrida.carro.t => c.disponibilidade.t = NaoDisponivel	
     }
+
 	-- Verifica se o carro nao está em corrida e ele esta disponivel
 	assert carro_disponivel_corrida {
 		all c:Carro | all t:Time | all corrida:Corrida | c !in corrida.carro.t => c.disponibilidade.t = Disponivel
     }
+
 	-- Verifica se toda corrida tem pelo um passageiro
 	assert toda_corrida_tem_passageiro {
 		all corrida:Corrida | some t:Time | #corrida.passageiro.t = 1
 	}
+
     -- Verifica se todas as corridas estão em uma região
 	assert toda_corrida_em_regiao {
     		all corrida:Corrida | all t:Time | corrida.regiao.t in Regiao 
